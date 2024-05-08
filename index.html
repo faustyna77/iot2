@@ -24,6 +24,7 @@
   <button id="led6ButtonOn">led 6 on </button>
   <button id="led6ButtonOff">led 6 off</button>
   <button id="servoBtn1">Servo button</button>
+  <button id="servoInitialBtn">Move to Initial Position</button>
 
   
 
@@ -42,7 +43,7 @@ const led2ButtonOff = document.getElementById('led2ButtonOff');
 const led3ButtonOn = document.getElementById('led3ButtonOn');
 const led3ButtonOff = document.getElementById('led3ButtonOff');
 const servoBtn1=document.getElementById('servoBtn1');
-
+const servoInitialBtn = document.getElementById('servoInitialBtn');
 const led6ButtonOn = document.getElementById('led6ButtonOn');
 const led6ButtonOff = document.getElementById('led6ButtonOff');
 const bleStateContainer = document.getElementById('bleState');
@@ -85,7 +86,7 @@ const valueSentContainer = document.getElementById('valueSent');
     led6ButtonOn.addEventListener('click',()=>writeOnCharacteristic(6));
     led6ButtonOff.addEventListener('click',()=>writeOnCharacteristic(11));
     servoBtn1.addEventListener('click',()=>writeOnCharacteristic2(12));
-
+    servoInitialBtn.addEventListener('click',()=>writeOnCharacteristic2(13));
 
     function isWebBluetoothEnabled() {
         if (!navigator.bluetooth) {
