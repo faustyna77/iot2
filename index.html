@@ -12,6 +12,7 @@
   <p>Stan BLE: <strong><span id="bleState" style="color:#d13a30;">Niepołączony</span></strong></p>
   <h2>Obsługa Serwa</h2>
   <button id="servoOnButton">Włącz serwo</button>
+  <button id="servoStopButton">Zatrzymaj serwo</button> <!-- Nowy przycisk -->
   <button id="servoInitialButton">Przesuń do pozycji początkowej</button>
   <p>Ostatnia wysłana wartość: <span id="valueSent"></span></p>
 </body>
@@ -19,6 +20,7 @@
   const connectButton = document.getElementById('connectBleButton');
   const disconnectButton = document.getElementById('disconnectBleButton');
   const servoOnButton = document.getElementById('servoOnButton');
+  const servoStopButton = document.getElementById('servoStopButton'); // Nowy przycisk
   const servoInitialButton = document.getElementById('servoInitialButton');
   const bleStateContainer = document.getElementById('bleState');
   const valueSentContainer = document.getElementById('valueSent');
@@ -35,6 +37,7 @@
 
   disconnectButton.addEventListener('click', disconnectDevice);
   servoOnButton.addEventListener('click', () => writeCharacteristic(12));
+  servoStopButton.addEventListener('click', () => writeCharacteristic(14)); // Nowa funkcja
   servoInitialButton.addEventListener('click', () => writeCharacteristic(13));
 
   function isWebBluetoothEnabled() {
