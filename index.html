@@ -24,9 +24,6 @@
   <button id="led6ButtonOn">led 6 on </button>
   <button id="led6ButtonOff">led 6 off</button>
   <button id="servoBtn1">Servo button</button>
-  <button id="leftButton">Move Left</button>
-  <button id="rightButton">Move Right</button>
-  <p>Last value sent: <span id="valueSent"></span></p>
 
   
 
@@ -48,8 +45,6 @@ const servoBtn1=document.getElementById('servoBtn1');
 
 const led6ButtonOn = document.getElementById('led6ButtonOn');
 const led6ButtonOff = document.getElementById('led6ButtonOff');
-const leftButton = document.getElementById('leftButton');
-    const rightButton = document.getElementById('rightButton');
 const bleStateContainer = document.getElementById('bleState');
 const valueContainer = document.getElementById('valueContainer');
 const timestampContainer = document.getElementById('timestamp');
@@ -59,12 +54,14 @@ const valueSentContainer = document.getElementById('valueSent');
     // Disconnect Button
     var deviceName ='ESP32';
     var bleService = '19b10000-e8f2-537e-4f6c-d104768a1214';
-    var servoCharacteristic = '19b10002-e8f2-537e-4f6c-d104768a1214';
-   
+    var ledCharacteristic = '19b10002-e8f2-537e-4f6c-d104768a1214';
+    var sensorCharacteristic= '19b10001-e8f2-537e-4f6c-d104768a1214';
+    var servoCharacteristic='e42dc8ca-8171-4775-98f6-7fdaa333044b';
+
     //Global Variables to Handle Bluetooth
     var bleServer;
     var bleServiceFound;
-   
+    var sensorCharacteristicFound;
     var servoCharacteristicFound;
 
 
@@ -77,13 +74,9 @@ const valueSentContainer = document.getElementById('valueSent');
 
     // Disconnect Button
     disconnectButton.addEventListener('click', disconnectDevice);
-    leftButton.addEventListener('click', () => writeAngleCharacteristic(45)); // Move to 45 degrees
-
-// Move Right Button
-rightButton.addEventListener('click', () => writeAngleCharacteristic(135)); // Move to 135 degrees
 
     // Write to the ESP32 LED Characteristic
-   /* led1ButtonOn.addEventListener('click', () => writeOnCharacteristic(1));
+    led1ButtonOn.addEventListener('click', () => writeOnCharacteristic(1));
     led1ButtonOff.addEventListener('click', () => writeOnCharacteristic(0));
     led2ButtonOn.addEventListener('click', () => writeOnCharacteristic(2));
     led2ButtonOff.addEventListener('click', () => writeOnCharacteristic(3));
@@ -91,7 +84,7 @@ rightButton.addEventListener('click', () => writeAngleCharacteristic(135)); // M
     led3ButtonOff.addEventListener('click', () => writeOnCharacteristic(5));
     led6ButtonOn.addEventListener('click',()=>writeOnCharacteristic(6));
     led6ButtonOff.addEventListener('click',()=>writeOnCharacteristic(11));
-    servoBtn1.addEventListener('click',()=>writeOnCharacteristic2(12));*/
+    servoBtn1.addEventListener('click',()=>writeOnCharacteristic2(12));
 
 
     function isWebBluetoothEnabled() {
@@ -131,7 +124,7 @@ rightButton.addEventListener('click', () => writeAngleCharacteristic(135)); // M
         })
         .then(characteristic => {
             console.log("Characteristic discovered:", characteristic.uuid);
-            servoCharacteristic = characteristic;
+            sensorCharacteristicFound = characteristic;
             characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
             characteristic.startNotifications();
             console.log("Notifications Started.");
@@ -160,28 +153,27 @@ rightButton.addEventListener('click', () => writeAngleCharacteristic(135)); // M
 
 
 
-    function writeAngleCharacteristic(angle){
+    function writeOnCharacteristic(value){
         if (bleServer && bleServer.connected) {
-            bleServiceFound.getCharacteristic(servoCharacteristic)
+            bleServiceFound.getCharacteristic(ledCharacteristic)
             .then(characteristic => {
-                console.log("Found the servo characteristic: ", characteristic.uuid);
-                const data = new Uint16Array([angle]);
+                console.log("Found the LED characteristic: ", characteristic.uuid);
+                const data = new Uint8Array([value]);
                 return characteristic.writeValue(data);
             })
             .then(() => {
-                latestValueSent.innerHTML = angle;
-                console.log("Angle written to servo characteristic:", angle);
+                latestValueSent.innerHTML = value;
+                console.log("Value written to LEDcharacteristic:", value);
             })
             .catch(error => {
-                console.error("Error writing to the servo characteristic: ", error);
+                console.error("Error writing to the LED characteristic: ", error);
             });
         } else {
             console.error ("Bluetooth is not connected. Cannot write to characteristic.")
             window.alert("Bluetooth is not connected. Cannot write to characteristic. \n Connect to BLE first!")
         }
     }
-   
-/*
+
     function writeOnCharacteristic2(value){
         if (bleServer && bleServer.connected) {
             bleServiceFound.getCharacteristic(servoCharacteristic)
@@ -203,14 +195,14 @@ rightButton.addEventListener('click', () => writeAngleCharacteristic(135)); // M
         }
     }
 
-*/
+
 
 
     function disconnectDevice() {
         console.log("Disconnect Device.");
         if (bleServer && bleServer.connected) {
-            if (servoCharacteristicFound) {
-                servoCharacteristicFound.stopNotifications()
+            if (sensorCharacteristicFound) {
+                sensorCharacteristicFound.stopNotifications()
                     .then(() => {
                         console.log("Notifications Stopped");
                         return bleServer.disconnect();
