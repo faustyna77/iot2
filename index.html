@@ -14,8 +14,7 @@
   <button id="leftButton">Move Left</button>
   <button id="rightButton">Move Right</button>
   <p>Last value sent: <span id="valueSent"></span></p>
-  <p><a href="https://randomnerdtutorials.com/">Created by RandomNerdTutorials.com</a></p>
-  <p><a href="https://RandomNerdTutorials.com/esp32-web-bluetooth/">Read the full project here.</a></p>
+  
 </body>
 <script>
     // DOM Elements
@@ -65,8 +64,54 @@
 
     // Connect to BLE Device and Enable Notifications
     function connectToDevice(){
-        // Code to connect to BLE device
-        // ...
+        console.log('Initializing Bluetooth...');
+        navigator.bluetooth.requestDevice({
+            filters: [{name: deviceName}],
+            optionalServices: [bleService]
+        })
+        .then(device => {
+            console.log('Device Selected:', device.name);
+            bleStateContainer.innerHTML = 'Connected to device ' + device.name;
+            bleStateContainer.style.color = "#24af37";
+            device.addEventListener('gattservicedisconnected', onDisconnected);
+            return device.gatt.connect();
+        })
+        .then(gattServer =>{
+            bleServer = gattServer;
+            console.log("Connected to GATT Server");
+            return bleServer.getPrimaryService(bleService);
+        })
+        .then(service => {
+            bleServiceFound = service;
+            console.log("Service discovered:", service.uuid);
+            return service.getCharacteristic(servoCharacteristic);
+        })
+        .then(characteristic => {
+            console.log("Characteristic discovered:", characteristic.uuid);
+            servoCharacteristicFound = characteristic;
+        })
+        .catch(error => {
+            console.log('Error: ', error);
+        })
+    }
+
+    // Disconnect BLE Device
+    function disconnectDevice() {
+        console.log("Disconnect Device.");
+        if (bleServer && bleServer.connected) {
+            bleServer.disconnect()
+                .then(() => {
+                    console.log("Device Disconnected");
+                    bleStateContainer.innerHTML = "Device Disconnected";
+                    bleStateContainer.style.color = "#d13a30";
+                })
+                .catch(error => {
+                    console.log("An error occurred:", error);
+                });
+        } else {
+            console.error("Bluetooth is not connected.");
+            window.alert("Bluetooth is not connected.")
+        }
     }
 
     // Write angle value to the servo characteristic
@@ -90,55 +135,5 @@
             window.alert("Bluetooth is not connected. Cannot write to characteristic. \n Connect to BLE first!")
         }
     }
-
-   // Function to disconnect from BLE Device
-function disconnectDevice() {
-    if (bleServer && bleServer.connected) {
-        if (servoCharacteristicFound) {
-            servoCharacteristicFound.stopNotifications()
-                .then(() => {
-                    console.log("Notifications Stopped");
-                    return bleServer.disconnect();
-                })
-                .then(() => {
-                    console.log("Device Disconnected");
-                    bleStateContainer.innerHTML = "Device Disconnected";
-                    bleStateContainer.style.color = "#d13a30";
-                })
-                .catch(error => {
-                    console.log("An error occurred:", error);
-                });
-        } else {
-            console.log("No characteristic found to disconnect.");
-        }
-    } else {
-        console.error("Bluetooth is not connected.");
-        window.alert("Bluetooth is not connected.");
-    }
-}
-
-// Function to handle when device is disconnected
-function onDisconnected(event) {
-    console.log('Device Disconnected:', event.target.device.name);
-    bleStateContainer.innerHTML = "Device disconnected";
-    bleStateContainer.style.color = "#d13a30";
-    connectToDevice(); // Reconnect to the device automatically
-}
-
-// Function to handle characteristic value changes
-function handleCharacteristicChange(event) {
-    const newValueReceived = new TextDecoder().decode(event.target.value);
-    console.log("Characteristic value changed: ", newValueReceived);
-    retrievedValue.innerHTML = newValueReceived;
-    timestampContainer.innerHTML = getDateTime();
-}
-
-// Function to handle errors during BLE operations
-function handleError(error) {
-    console.error("An error occurred:", error);
-    // Handle the error as needed
-}
-
-
 </script>
 </html>
