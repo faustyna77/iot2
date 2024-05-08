@@ -131,7 +131,7 @@ rightButton.addEventListener('click', () => writeAngleCharacteristic(135)); // M
         })
         .then(characteristic => {
             console.log("Characteristic discovered:", characteristic.uuid);
-            sensorCharacteristicFound = characteristic;
+            servoCharacteristic = characteristic;
             characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
             characteristic.startNotifications();
             console.log("Notifications Started.");
@@ -209,8 +209,8 @@ rightButton.addEventListener('click', () => writeAngleCharacteristic(135)); // M
     function disconnectDevice() {
         console.log("Disconnect Device.");
         if (bleServer && bleServer.connected) {
-            if (sensorCharacteristicFound) {
-                sensorCharacteristicFound.stopNotifications()
+            if (servoCharacteristicFound) {
+                servoCharacteristicFound.stopNotifications()
                     .then(() => {
                         console.log("Notifications Stopped");
                         return bleServer.disconnect();
