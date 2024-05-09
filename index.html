@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!--<!DOCTYPE html>
 <html>
 <head>
     <title>ESP32 Web BLE App</title>
@@ -235,5 +235,146 @@ const valueSentContainer = document.getElementById('valueSent');
 
 
 
+--->
 
 
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESP32 Web BLE App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="">
+</head>
+<body>
+  <h1>ESP32 Web BLE Application</h1>
+  <button id="connectBleButton">Połącz z urządzeniem BLE</button>
+  <button id="disconnectBleButton">Rozłącz urządzenie BLE</button>
+  <p>Stan BLE: <strong><span id="bleState" style="color:#d13a30;">Niepołączony</span></strong></p>
+  <h2>Obsługa Serwa</h2>
+  <button id="servoOnButton">Włącz serwo</button>
+  <button id="servoStopButton">Zatrzymaj serwo</button> <!-- Nowy przycisk -->
+  <button id="servoInitialButton">Przesuń do pozycji początkowej</button>
+  <p>Ostatnia wysłana wartość: <span id="valueSent"></span></p>
+</body>
+<script>
+  const connectButton = document.getElementById('connectBleButton');
+  const disconnectButton = document.getElementById('disconnectBleButton');
+  const servoOnButton = document.getElementById('servoOnButton');
+  const servoStopButton = document.getElementById('servoStopButton'); // Nowy przycisk
+  const servoInitialButton = document.getElementById('servoInitialButton');
+  const bleStateContainer = document.getElementById('bleState');
+  const valueSentContainer = document.getElementById('valueSent');
+
+  let bleServer;
+  let bleServiceFound;
+  let servoCharacteristicFound;
+
+  connectButton.addEventListener('click', (event) => {
+    if (isWebBluetoothEnabled()){
+      connectToDevice();
+    }
+  });
+
+  disconnectButton.addEventListener('click', disconnectDevice);
+  servoOnButton.addEventListener('click', () => writeCharacteristic(12));
+  servoStopButton.addEventListener('click', () => writeCharacteristic(14)); // Nowa funkcja
+  servoInitialButton.addEventListener('click', () => writeCharacteristic(13));
+
+  function isWebBluetoothEnabled() {
+    if (!navigator.bluetooth) {
+      console.log("Web Bluetooth API is not available in this browser!");
+      bleStateContainer.innerHTML = "Web Bluetooth API is not available in this browser!";
+      return false
+    }
+    console.log('Web Bluetooth API is supported in this browser.');
+    return true
+  }
+
+  function connectToDevice(){
+    console.log('Initializing Bluetooth...');
+    navigator.bluetooth.requestDevice({
+      filters: [{name: 'ESP32'}],
+      optionalServices: ['19b10000-e8f2-537e-4f6c-d104768a1214']
+    })
+    .then(device => {
+      console.log('Selected device:', device.name);
+      bleStateContainer.innerHTML = 'Connected to device ' + device.name;
+      bleStateContainer.style.color = "#24af37";
+      device.addEventListener('gattserverdisconnected', onDisconnected);
+      return device.gatt.connect();
+    })
+    .then(gattServer =>{
+      bleServer = gattServer;
+      console.log("Connected to GATT Server");
+      return bleServer.getPrimaryService('19b10000-e8f2-537e-4f6c-d104768a1214');
+    })
+    .then(service => {
+      bleServiceFound = service;
+      console.log("Service discovered:", service.uuid);
+      return service.getCharacteristic('e42dc8ca-8171-4775-98f6-7fdaa333044b');
+    })
+    .then(characteristic => {
+      console.log("Characteristic discovered:", characteristic.uuid);
+      servoCharacteristicFound = characteristic;
+      console.log("Ready to write to the servo characteristic.");
+    })
+    .catch(error => {
+      console.log('Error: ', error);
+    })
+  }
+
+  function onDisconnected(event){
+    console.log('Device disconnected:', event.target.name);
+    bleStateContainer.innerHTML = "Device disconnected";
+    bleStateContainer.style.color = "#d13a30";
+    connectToDevice();
+  }
+
+  function writeCharacteristic(value){
+    if (bleServer && bleServer.connected) {
+      bleServiceFound.getCharacteristic('e42dc8ca-8171-4775-98f6-7fdaa333044b')
+      .then(characteristic => {
+        console.log("Servo characteristic found: ", characteristic.uuid);
+        const data = new Uint8Array([value]);
+        return characteristic.writeValue(data);
+      })
+      .then(() => {
+        valueSentContainer.innerHTML = value;
+        console.log("Value written to servo characteristic:", value);
+      })
+      .catch(error => {
+        console.error("Error writing to the servo characteristic: ", error);
+      });
+    } else {
+      console.error ("Bluetooth is not connected. Cannot write to characteristic.");
+      window.alert("Bluetooth is not connected. Cannot write to characteristic. \n Connect to BLE first!");
+    }
+  }
+
+  function disconnectDevice() {
+    console.log("Disconnecting device.");
+    if (bleServer && bleServer.connected) {
+      if (servoCharacteristicFound) {
+        servoCharacteristicFound.stopNotifications()
+        .then(() => {
+          console.log("Notifications stopped.");
+          return bleServer.disconnect();
+        })
+        .then(() => {
+          console.log("Device disconnected.");
+          bleStateContainer.innerHTML = "Device disconnected";
+          bleStateContainer.style.color = "#d13a30";
+        })
+        .catch(error => {
+          console.log("An error occurred:", error);
+        });
+      } else {
+        console.log("No characteristic found to disconnect.");
+      }
+    } else {
+      console.error("Bluetooth is not connected.");
+      window.alert("Bluetooth is not connected.");
+    }
+  }
+</script>
+</html>
